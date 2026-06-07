@@ -12,6 +12,7 @@ import SkillsMarketplace from "./SkillsMarketplace";
 import HistoryPanel from "./HistoryPanel";
 import TaskModal from "./TaskModal";
 import NotificationCenter, { type Notification, taskToNotification } from "./NotificationCenter";
+import ActionTimeline, { type TimelineEvent } from "./ActionTimeline";
 import CompanySelector from "./CompanySelector";
 import ConnectorsPanel from "./ConnectorsPanel";
 import { DIRECTOR_MAP } from "../lib/engines";
@@ -105,6 +106,9 @@ export default function CommandCenter() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedTask, setSelectedTask] = useState<UITask | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([
+    { id: "sys-boot", type: "system", title: "ALLCLOSING360 OS iniciado", detail: "14 directores IA · 35 skills · sistema listo", timestamp: new Date() },
+  ]);
   const [companyId, setCompanyId] = useState(DEFAULT_COMPANY_ID);
   const sessionLoaded = useRef(false);
   // track which task IDs have already fired notifications
@@ -133,6 +137,14 @@ export default function CommandCenter() {
     });
   }, [messages, tasks, orders, activeDirectorId]);
 
+  // ── Timeline helper ──
+  const pushEvent = useCallback((ev: Omit<TimelineEvent, "id" | "timestamp">) => {
+    setTimelineEvents((prev) => [
+      ...prev,
+      { ...ev, id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, timestamp: new Date() },
+    ]);
+  }, []);
+
   // ── Auto-advance task progress + notifications ──
   useEffect(() => {
     const id = setInterval(() => {
@@ -146,7 +158,6 @@ export default function CommandCenter() {
 
           if (next >= 100) {
             const result = t.result ?? generateResult(t.skillId ?? "");
-            // fire notification (deferred so we don't setState inside setState loop)
             if (!notifiedTasks.current.has(t.id)) {
               notifiedTasks.current.add(t.id);
               setTimeout(() => {
@@ -157,6 +168,7 @@ export default function CommandCenter() {
                   }
                   return cur;
                 });
+                pushEvent({ type: "task_complete", directorId: t.engineId, title: t.title, skillName: t.skillName });
               }, 200);
             }
             return { ...t, progress: 100, status: "completed", currentStep: "Completado", result };
@@ -166,7 +178,7 @@ export default function CommandCenter() {
       );
     }, 3500);
     return () => clearInterval(id);
-  }, []);
+  }, [pushEvent]);
 
   // ── View result handler ──
   const handleViewResult = useCallback((taskId: string) => {
@@ -218,6 +230,7 @@ export default function CommandCenter() {
         currentStep: steps[0] ?? "Iniciando…",
       };
       setTasks((prev) => [optimisticTask, ...prev]);
+      pushEvent({ type: "task_start", directorId, title: optimisticTask.title, detail: skill.name, skillName: skill.name });
 
       try {
         const res = await fetch("/api/task", {
@@ -267,6 +280,7 @@ export default function CommandCenter() {
               setTasks((prev) => prev.map((t) =>
                 t.id === taskId ? { ...t, progress: pct, currentStep: stepLabel } : t
               ));
+              pushEvent({ type: "task_step", directorId, title: stepLabel, skillName: skill.name });
             } else if (event === "artifact") {
               // Artifact created — update step label
               const atype = parsed.type as string;
@@ -285,6 +299,8 @@ export default function CommandCenter() {
               const pricePerM = isSonnet ? 15 : 4;
               const realCost = Math.round(((d.outputTokens ?? 0) / 1_000_000) * pricePerM * 10000) / 10000;
               const realTok = (d.inputTokens ?? 0) + (d.outputTokens ?? 0);
+
+              pushEvent({ type: "task_complete", directorId, title: d.taskTitle || optimisticTask.title, skillName: skill.name });
 
               // Finalize task
               setTasks((prev) => prev.map((t) =>
@@ -318,6 +334,7 @@ export default function CommandCenter() {
                   }),
               );
             } else if (event === "error") {
+              pushEvent({ type: "task_error", directorId, title: "Error en tarea", detail: (parsed.message as string) ?? undefined, skillName: skill.name });
               throw new Error((parsed.message as string) ?? "Error en tarea");
             }
           }
@@ -326,6 +343,8 @@ export default function CommandCenter() {
         console.warn("[CommandCenter] Streaming failed, using mock fallback:", err);
         const mock = getSkillResponse(skillId);
         const taskResult = generateResult(skillId);
+
+        pushEvent({ type: "task_complete", directorId, title: mock.taskTitle || optimisticTask.title, skillName: skill.name });
 
         setTasks((prev) => prev.map((t) =>
           t.id === taskId
@@ -362,7 +381,7 @@ export default function CommandCenter() {
 
       setIsProcessing(false);
     },
-    [isProcessing, companyId],
+    [isProcessing, companyId, pushEvent],
   );
 
   // ── Memory actions ──
@@ -483,12 +502,17 @@ export default function CommandCenter() {
         {/* View content */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {activeView === "office" && (
-            <IsometricOffice
-              tasks={tasks}
-              activeDirectorId={activeDirectorId}
-              onDirectorSelect={setActiveDirectorId}
-              onViewResult={(task) => setSelectedTask(task)}
-            />
+            <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+              <div style={{ flex: 1, overflow: "hidden", padding: "10px 14px" }}>
+                <IsometricOffice
+                  tasks={tasks}
+                  activeDirectorId={activeDirectorId}
+                  onDirectorSelect={setActiveDirectorId}
+                  onViewResult={(task) => setSelectedTask(task)}
+                />
+              </div>
+              <ActionTimeline events={timelineEvents} />
+            </div>
           )}
           {activeView === "ops" && (
             <OpsPanel tasks={tasks} orders={orders} activeDirectorId={activeDirectorId} />
