@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm --filter web build",
-  "outputDirectory": ".next",
+  "buildCommand": "pnpm --filter @ac360/web build",
+  "outputDirectory": "apps/web/.next",
   "installCommand": "pnpm install",
   "framework": "nextjs",
   "rewrites": [
