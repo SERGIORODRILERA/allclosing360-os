@@ -6,7 +6,7 @@ import type { Message } from "./MessageFeed";
 import type { UITask, TaskArtifact } from "./TasksPanel";
 import NavRail, { type OSView } from "./NavRail";
 import ChatPanel from "./ChatPanel";
-import IsometricOffice from "./IsometricOffice";
+import SimsOfficeView from "./SimsOfficeView";
 import OpsPanel from "./OpsPanel";
 import SkillsMarketplace from "./SkillsMarketplace";
 import HistoryPanel from "./HistoryPanel";
@@ -503,8 +503,8 @@ export default function CommandCenter() {
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {activeView === "office" && (
             <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-              <div style={{ flex: 1, overflow: "hidden", padding: "10px 14px" }}>
-                <IsometricOffice
+              <div style={{ flex: 1, overflow: "hidden" }}>
+                <SimsOfficeView
                   tasks={tasks}
                   activeDirectorId={activeDirectorId}
                   onDirectorSelect={setActiveDirectorId}

@@ -12,13 +12,17 @@
   "dependencies": {
     "@ac360/types": "workspace:*",
     "@anthropic-ai/sdk": "^0.102.0",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
     "next": "^15.0.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.184.1",
     "typescript": "^5.5.2"
   }
 }
