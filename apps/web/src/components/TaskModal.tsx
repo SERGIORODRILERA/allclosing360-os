@@ -36,12 +36,17 @@ export default function TaskModal({ task, onClose, onRedo }: TaskModalProps) {
 
   function downloadArtifact() {
     if (!task.artifact) return;
+    // Always use Blob URL from content — works on Vercel + VPS
+    const mime = task.artifact.type === "html" ? "text/html" : task.artifact.type === "code" ? "text/plain" : "text/markdown";
+    const blob = new Blob([task.artifact.content], { type: mime });
+    const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = task.artifact.url;
+    a.href = blobUrl;
     a.download = task.artifact.filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
   }
 
   function exportText() {
@@ -196,16 +201,16 @@ export default function TaskModal({ task, onClose, onRedo }: TaskModalProps) {
             </div>
           )}
 
-          {/* HTML iframe preview */}
+          {/* HTML iframe preview — uses srcDoc so it works on Vercel too */}
           {isHTML && tab === "preview" && (
             <div style={{ flex: 1, overflow: "hidden", padding: "12px 20px" }}>
               <div style={{ height: "100%", borderRadius: 10, overflow: "hidden", border: "1px solid var(--color-border)" }}>
                 <iframe
                   ref={iframeRef}
-                  src={task.artifact!.url}
+                  srcDoc={task.artifact!.content}
                   style={{ width: "100%", height: "100%", border: "none", background: "#fff" }}
                   title="Vista previa HTML"
-                  sandbox="allow-scripts allow-same-origin"
+                  sandbox="allow-scripts"
                 />
               </div>
             </div>
@@ -295,7 +300,12 @@ export default function TaskModal({ task, onClose, onRedo }: TaskModalProps) {
 
           {hasArtifact && isHTML && (
             <button
-              onClick={() => window.open(task.artifact!.url, "_blank")}
+              onClick={() => {
+                const blob = new Blob([task.artifact!.content], { type: "text/html" });
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank");
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+              }}
               style={{ fontSize: 11, padding: "8px 14px", borderRadius: 8, background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.25)", color: "#60a5fa", flex: 1, fontWeight: 500 }}
             >
               🔗 Abrir

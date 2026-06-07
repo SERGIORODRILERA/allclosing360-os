@@ -32,7 +32,13 @@
       "Bash(chmod +x *)",
       "Bash(git init *)",
       "Bash(git config *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git branch *)",
+      "Bash(git commit -m 'feat: ALLCLOSING360 OS v4.2 — Minecraft 3D office + Manus agent + Connectors hub *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(npm i *)",
+      "Bash(git commit -m 'fix: Vercel compatibility — Blob URLs for downloads, srcDoc for iframe, best-effort file write *)"
     ]
   }
 }

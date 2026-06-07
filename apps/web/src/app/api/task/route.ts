@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest } from "next/server";
-import { writeFileSync, mkdirSync } from "fs";
+import { writeFileSync, mkdirSync } from "fs"; // best-effort; skipped on Vercel
 import path from "path";
 import { DIRECTOR_MAP } from "../../../lib/engines";
 import { SKILL_MAP } from "../../../lib/skills";
@@ -15,10 +15,17 @@ const POWER_SKILLS = new Set([
   "crear_campana_meta_ads", "crear_estrategia_seo", "crear_propuesta_comercial",
 ]);
 
-function outputDir() {
-  const d = path.join(process.cwd(), "public", "generated");
-  mkdirSync(d, { recursive: true });
-  return d;
+// On Vercel, public/ is read-only → files won't be serveable via URL.
+// We always return content inline; file write is best-effort (works on VPS, skipped on Vercel).
+function tryWriteFile(filename: string, content: string): string | null {
+  try {
+    const d = path.join(process.cwd(), "public", "generated");
+    mkdirSync(d, { recursive: true });
+    writeFileSync(path.join(d, filename), content, "utf-8");
+    return "/generated/" + filename;
+  } catch {
+    return null; // Vercel or read-only FS — content returned inline
+  }
 }
 
 // ─── Tool definitions ────────────────────────────────────────────────────────
@@ -183,22 +190,20 @@ export async function POST(req: NextRequest) {
               if (block.name === "create_html_file") {
                 const inp = block.input as { filename: string; html: string; description: string };
                 send("step", { label: "Generando archivo HTML…", index: 2 });
-                const fname  = taskId + ".html";
-                writeFileSync(path.join(outputDir(), fname), inp.html, "utf-8");
-                const url = "/generated/" + fname;
-                artifact = { type: "html", url, filename: inp.filename, content: inp.html };
+                const url = tryWriteFile(taskId + ".html", inp.html) ?? null;
+                artifact = { type: "html", url: url ?? "", filename: inp.filename, content: inp.html };
                 taskTitle = inp.description.slice(0, 70);
                 send("artifact", { type: "html", url, filename: inp.filename });
-                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: "HTML file saved at " + url });
+                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: "HTML file created." });
               }
 
               // ── create_document ───────────────────────────────────────────
               else if (block.name === "create_document") {
                 const inp = block.input as { title: string; content: string; doc_type: string };
                 send("step", { label: "Generando documento…", index: 2 });
-                const fname = taskId + ".md";
-                writeFileSync(path.join(outputDir(), fname), "# " + inp.title + "\n\n" + inp.content, "utf-8");
-                artifact = { type: "document", url: "/generated/" + fname, filename: inp.title, content: inp.content };
+                const mdContent = "# " + inp.title + "\n\n" + inp.content;
+                const url = tryWriteFile(taskId + ".md", mdContent) ?? null;
+                artifact = { type: "document", url: url ?? "", filename: inp.title, content: inp.content };
                 taskTitle = inp.title;
                 send("artifact", { type: "document", filename: inp.title, docType: inp.doc_type });
                 toolResults.push({ type: "tool_result", tool_use_id: block.id, content: "Document created: " + inp.title });
@@ -209,12 +214,11 @@ export async function POST(req: NextRequest) {
                 const inp = block.input as { filename: string; language: string; code: string; description: string };
                 send("step", { label: "Generando código…", index: 2 });
                 const extMap: Record<string, string> = { javascript: "js", typescript: "ts", python: "py", json: "json", yaml: "yaml", bash: "sh" };
-                const fname = taskId + "." + (extMap[inp.language] ?? "txt");
-                writeFileSync(path.join(outputDir(), fname), inp.code, "utf-8");
-                artifact = { type: "code", url: "/generated/" + fname, filename: inp.filename, content: inp.code, language: inp.language };
+                const url = tryWriteFile(taskId + "." + (extMap[inp.language] ?? "txt"), inp.code) ?? null;
+                artifact = { type: "code", url: url ?? "", filename: inp.filename, content: inp.code, language: inp.language };
                 taskTitle = inp.description.slice(0, 70);
-                send("artifact", { type: "code", url: "/generated/" + fname, filename: inp.filename, language: inp.language });
-                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: "Code file saved at /generated/" + fname });
+                send("artifact", { type: "code", url, filename: inp.filename, language: inp.language });
+                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: "Code file created." });
               }
             }
           }
