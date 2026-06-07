@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AllClosing360 — Cierra Más, Escala Más</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0a0a0f; color: #f0f0f0; }
+
+    /* NAV */
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 60px; background: #0a0a0f; border-bottom: 1px solid #1e1e2e; }
+    nav .logo { font-size: 1.5rem; font-weight: 800; color: #fff; }
+    nav .logo span { color: #6c63ff; }
+    nav a.cta-nav { background: #6c63ff; color: #fff; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.3s; }
+    nav a.cta-nav:hover { background: #5548e0; }
+
+    /* HERO */
+    .hero { text-align: center; padding: 100px 20px 80px; background: radial-gradient(ellipse at top, #1a1040 0%, #0a0a0f 70%); }
+    .hero .badge { display: inline-block; background: #1e1a3a; color: #a89fff; border: 1px solid #6c63ff44; padding: 6px 18px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; letter-spacing: 1px; margin-bottom: 24px; text-transform: uppercase; }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.6rem); font-weight: 900; line-height: 1.15; max-width: 820px; margin: 0 auto 20px; }
+    .hero h1 span { color: #6c63ff; }
+    .hero p { font-size: 1.15rem; color: #a0a0b8; max-width: 580px; margin: 0 auto 40px; line-height: 1.7; }
+    .hero-cta { display: inline-block; background: linear-gradient(135deg, #6c63ff, #a78bfa); color: #fff; padding: 16px 40px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; text-decoration: none; box-shadow: 0 0 30px #6c63ff55; transition: transform 0.2s, box-shadow 0.2s; }
+    .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 0 45px #6c63ff88; }
+    .hero-sub { margin-top: 16px; font-size: 0.85rem; color: #6060a0; }
+
+    /* BENEFITS */
+    .benefits { padding: 90px 20px; background: #0d0d18; }
+    .benefits h2 { text-align: center; font-size: 2rem; font-weight: 800; margin-bottom: 60px; }
+    .benefits h2 span { color: #6c63ff; }
+    .cards { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; max-width: 1100px; margin: 0 auto; }
+    .card { background: #12121f; border: 1px solid #1e1e3a; border-radius: 16px; padding: 40px 32px; flex: 1 1 280px; max-width: 340px; transition: transform 0.3s, border-color 0.3s; }
+    .card:hover { transform: translateY(-6px); border-color: #6c63ff; }
+    .card .icon { font-size: 2.4rem; margin-bottom: 20px; }
+    .card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 12px; color: #fff; }
+    .card p { font-size: 0.95rem; color: #8080a8; line-height: 1.7; }
+
+    /* SOCIAL PROOF */
+    .proof { background: radial-gradient(ellipse at bottom, #1a1040 0%, #0a0a0f 80%); padding: 80px 20px; text-align: center; }
+    .proof h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 50px; }
+    .stats { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; }
+    .stat .num { font-size: 3rem; font-weight: 900; color: #6c63ff; }
+    .stat .label { font-size: 0.9rem; color: #8080a8; margin-top: 6px; }
+
+    /* CTA FINAL */
+    .cta-section { padding: 90px 20px; text-align: center; background: #0d0d18; }
+    .cta-section h2 { font-size: 2.2rem; font-weight: 900; margin-bottom: 16px; }
+    .cta-section p { color: #8080a8; font-size: 1rem; margin-bottom: 36px; max-width: 500px; margin-left: auto; margin-right: auto; }
+    .cta-section a { display: inline-block; background: linear-gradient(135deg, #6c63ff, #a78bfa); color: #fff; padding: 16px 44px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; text-decoration: none; box-shadow: 0 0 30px #6c63ff55; transition: transform 0.2s; }
+    .cta-section a:hover { transform: translateY(-2px); }
+
+    /* FOOTER */
+    footer { background: #0a0a0f; border-top: 1px solid #1e1e2e; padding: 30px 60px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    footer .logo { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    footer .logo span { color: #6c63ff; }
+    footer p { font-size: 0.8rem; color: #40406a; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">All<span>Closing</span>360</div>
+    <a class="cta-nav" href="#contacto">Agenda tu Sesión</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="badge">🚀 Sistema de Ventas 360°</div>
+    <h1>Convierte Prospectos en <span>Clientes Reales</span> con un Funnel que Cierra Solo</h1>
+    <p>En AllClosing360 diseñamos, automatizamos y optimizamos tu embudo de ventas para que generes ingresos predecibles — sin depender del caos.</p>
+    <a class="hero-cta" href="#contacto">Quiero Escalar Mis Ventas →</a>
+    <p class="hero-sub">Sin compromisos. Sesión estratégica gratuita de 30 minutos.</p>
+  </section>
+
+  <!-- BENEFICIOS -->
+  <section class="benefits">
+    <h2>¿Por Qué <span>AllClosing360</span>?</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="icon">🎯</div>
+        <h3>Funnels de Alta Conversión</h3>
+        <p>Diseñamos embudos estratégicos adaptados a tu negocio que guían al prospecto desde el primer clic hasta el cierre, maximizando cada punto de contacto.</p>
+      </div>
+      <div class="card">
+        <div class="icon">⚙️</div>
+        <h3>Automatización Inteligente</h3>
+        <p>Integramos CRM, email marketing y seguimiento automático para que no pierdas ningún lead. Tu proceso de ventas trabaja 24/7 por ti.</p>
+      </div>
+      <div class="card">
+        <div class="icon">📈</div>
+        <h3>Resultados Medibles</h3>
+        <p>Cada decisión se basa en datos reales. Analizamos, ajustamos y escalamos lo que funciona para que tu ROI crezca de forma constante.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF -->
+  <section class="proof">
+    <h2>Números que Hablan por Nosotros</h2>
+    <div class="stats">
+      <div class="stat"><div class="num">+150</div><div class="label">Funnels Lanzados</div></div>
+      <div class="stat"><div class="num">340%</div><div class="label">ROI Promedio</div></div>
+      <div class="stat"><div class="num">+80</div><div class="label">Clientes Satisfechos</div></div>
+      <div class="stat"><div class="num">24/7</div><div class="label">Automatización Activa</div></div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section class="cta-section" id="contacto">
+    <h2>¿Listo para Cerrar Más?</h2>
+    <p>Agenda hoy tu sesión estratégica gratuita y descubre exactamente qué está frenando tus ventas.</p>
+    <a href="https://allclosing360.com/agenda" target="_blank">Reservar Mi Sesión Gratuita →</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="logo">All<span>Closing</span>360</div>
+    <p>© 2025 AllClosing360. Todos los derechos reservados.</p>
+    <p>contacto@allclosing360.com</p>
+  </footer>
+
+</body>
+</html>

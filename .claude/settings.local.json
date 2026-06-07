@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --version)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm --filter @ac360/web install)",
+      "Bash(pnpm *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(pnpm --filter @ac360/web dev --hostname 0.0.0.0)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\" http://localhost:3000/)",
+      "Read(//tmp/**)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl *)",
+      "Bash(python3 -c ' *)",
+      "Bash(node --input-type=module)",
+      "Bash(node -e ' *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('META ADS:', 'OK' if len\\(d.get\\('taskResult',''\\)\\)>200 else 'FAIL'\\); print\\('CHAT:', d.get\\('chatResponse',''\\)[:80]\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('LLAMADA:', 'OK' if len\\(d.get\\('taskResult',''\\)\\)>200 else 'FAIL'\\); print\\('TOKENS:', d.get\\('inputTokens',0\\)+d.get\\('outputTokens',0\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('REPORTE \\(Sonnet\\):', 'OK' if len\\(d.get\\('taskResult',''\\)\\)>500 else 'FAIL'\\); print\\('MODELO:', d.get\\('model'\\)\\); print\\('CHARS:', len\\(d.get\\('taskResult',''\\)\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('SEO:', 'OK' if len\\(d.get\\('taskResult',''\\)\\)>200 else 'FAIL'\\); print\\('TITLE:', d.get\\('taskTitle',''\\)\\)\")",
+      "Bash(apt-cache show *)",
+      "Bash(gpg --dearmor -o /usr/share/keyrings/cloudflare-main.gpg)",
+      "Bash(tee /etc/apt/sources.list.d/cloudflared.list)",
+      "Bash(apt-get update *)",
+      "Bash(apt-get install *)",
+      "Bash(cloudflared tunnel *)",
+      "Bash(pkill cloudflared *)",
+      "Bash(chmod +x *)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git add *)"
+    ]
+  }
+}

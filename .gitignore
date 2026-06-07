@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.turbo/
+dist/
+*.log
+.env.local
+.env*.local
+public/generated/*.html
+public/generated/*.md
+public/generated/*.js
+public/generated/*.ts
+.pnpm-store/

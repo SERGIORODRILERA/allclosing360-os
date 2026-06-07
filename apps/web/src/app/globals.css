@@ -1,0 +1,349 @@
+/* ─── RESET ─────────────────────────────────────────────────────────────── */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── OS DESIGN SYSTEM ──────────────────────────────────────────────────── */
+:root {
+  /* Core surfaces */
+  --color-bg:            #060609;
+  --color-surface:       #0b0b10;
+  --color-surface-2:     #0f0f16;
+  --color-surface-3:     #14141e;
+  --color-surface-4:     #1a1a26;
+
+  /* Borders */
+  --color-border:        #1e1e2e;
+  --color-border-subtle: #151520;
+  --color-border-glow:   rgba(79,126,255,0.15);
+
+  /* Typography */
+  --color-text:          #e2e2f0;
+  --color-text-muted:    #7070a0;
+  --color-text-dim:      #40405a;
+
+  /* Brand */
+  --color-accent:        #4f7eff;
+  --color-accent-hover:  #3b6ef0;
+  --color-accent-glow:   rgba(79,126,255,0.18);
+  --color-purple:        #a259ff;
+  --color-purple-glow:   rgba(162,89,255,0.18);
+
+  /* Semantic */
+  --color-success:       #22d97a;
+  --color-success-glow:  rgba(34,217,122,0.15);
+  --color-warning:       #fbbf24;
+  --color-error:         #f56565;
+
+  /* Layout */
+  --nav-width:           56px;
+  --chat-width:          380px;
+  --sidebar-width:       56px;   /* compat alias */
+  --tasks-width:         380px;  /* compat alias */
+}
+
+/* ─── BASE ───────────────────────────────────────────────────────────────── */
+html,body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #2a2a40; }
+
+/* ─── BUTTON RESET ──────────────────────────────────────────────────────── */
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+/* ─── ANIMATIONS ─────────────────────────────────────────────────────────── */
+
+/* Typing indicator */
+@keyframes typing-bounce {
+  0%,60%,100% { transform: translateY(0); opacity: 0.25; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+.typing-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  display: inline-block;
+  animation: typing-bounce 1.4s infinite ease-in-out;
+}
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.18s; }
+.typing-dot:nth-child(3) { animation-delay: 0.36s; }
+
+/* Message fade-in */
+@keyframes msg-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.msg-enter { animation: msg-fade-in 0.22s ease-out; }
+
+/* Task slide-in */
+@keyframes task-slide-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.task-enter { animation: task-slide-in 0.28s ease-out; }
+
+/* Status dot pulse */
+@keyframes status-pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.status-dot-active { animation: status-pulse 2s infinite; }
+
+/* Mic pulse */
+@keyframes mic-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(162,89,255,0.5); }
+  70% { box-shadow: 0 0 0 12px rgba(162,89,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(162,89,255,0); }
+}
+.mic-active {
+  animation: mic-pulse 1.4s infinite;
+  background: var(--color-purple) !important;
+  color: #fff !important;
+}
+
+/* Mic ring burst */
+@keyframes mic-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.mic-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-purple);
+  animation: mic-ring 1.5s ease-out infinite;
+  pointer-events: none;
+}
+.mic-ring:nth-child(2) { animation-delay: 0.5s; }
+.mic-ring:nth-child(3) { animation-delay: 1s; }
+
+/* Voice visualization bars */
+@keyframes voice-beat {
+  0%,100% { transform: scaleY(0.2); }
+  50% { transform: scaleY(1); }
+}
+.voice-bar {
+  width: 3px;
+  height: 22px;
+  background: var(--color-purple);
+  border-radius: 2px;
+  transform-origin: bottom;
+  animation: voice-beat 0.55s ease-in-out infinite;
+}
+.voice-bar:nth-child(1) { animation-delay: 0s; }
+.voice-bar:nth-child(2) { animation-delay: 0.08s; }
+.voice-bar:nth-child(3) { animation-delay: 0.16s; }
+.voice-bar:nth-child(4) { animation-delay: 0.24s; }
+.voice-bar:nth-child(5) { animation-delay: 0.32s; }
+.voice-bar:nth-child(6) { animation-delay: 0.24s; }
+.voice-bar:nth-child(7) { animation-delay: 0.16s; }
+
+/* Director pod activity bars */
+@keyframes activity-beat {
+  0%,100% { transform: scaleY(0.15); opacity: 0.4; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+.activity-bar {
+  width: 2.5px;
+  height: 14px;
+  border-radius: 2px;
+  transform-origin: bottom;
+  background: var(--bar-color, var(--color-accent));
+  transition: opacity 0.4s;
+}
+.activity-bar.idle { transform: scaleY(0.15); opacity: 0.2; }
+.activity-bar.working { animation: activity-beat 0.7s ease-in-out infinite; }
+
+/* Pod glow */
+@keyframes pod-glow {
+  0%,100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 18px 2px var(--pod-glow, transparent); }
+}
+
+/* Scan line — Jarvis effect */
+@keyframes scanline {
+  0%   { top: -2px; opacity: 0; }
+  3%   { opacity: 1; }
+  97%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Slide-down entrance */
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Avatar pod breathing */
+@keyframes pod-person-breathe {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-3px); }
+}
+
+/* Fade-in */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.fade-in { animation: fade-in 0.3s ease-out; }
+
+/* ─── SHARED PRIMITIVES ─────────────────────────────────────────────────── */
+
+/* Glass surface */
+.glass {
+  background: rgba(15,15,22,0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+}
+
+/* Nav item */
+.nav-item {
+  transition: background 0.15s, color 0.15s;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.nav-item:hover { background: var(--color-surface-3); }
+.nav-item.active { background: var(--color-accent-glow); color: var(--color-accent); }
+
+/* Engine / director item in old sidebar */
+.engine-item {
+  transition: background 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+.engine-item:hover { background: var(--color-surface-2); border-color: var(--color-border-subtle); }
+.engine-item.active { background: var(--color-surface-3); border-color: var(--color-border); }
+
+/* Director pod */
+.director-pod {
+  position: relative;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  cursor: pointer;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s, transform 0.15s;
+  overflow: hidden;
+  user-select: none;
+}
+.director-pod::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s;
+  border-radius: 12px;
+}
+.director-pod:hover { transform: translateY(-1px); }
+.director-pod:hover::before { opacity: 0.04; background: #fff; }
+.director-pod.selected { border-color: var(--pod-color, var(--color-accent)) !important; }
+.director-pod.working {
+  border-color: var(--pod-color, var(--color-accent));
+  background: var(--pod-bg, var(--color-surface-2));
+  box-shadow: 0 0 0 0 transparent;
+  animation: pod-glow 3s ease-in-out infinite;
+}
+
+/* Pod left accent bar */
+.director-pod.working::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--pod-color, var(--color-accent));
+}
+
+/* Metric card */
+.metric-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.metric-card:hover {
+  border-color: var(--color-border-glow);
+  box-shadow: 0 0 16px var(--color-accent-glow);
+}
+
+/* Skill card */
+.skill-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: default;
+  transition: border-color 0.2s, background 0.2s;
+}
+.skill-card:hover {
+  border-color: var(--color-border-glow);
+  background: var(--color-surface-3);
+}
+
+/* ─── APP SHELL GRID ─────────────────────────────────────────────────────── */
+.os-shell {
+  display: grid;
+  grid-template-columns: var(--nav-width) 1fr var(--chat-width);
+  height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(79,126,255,0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(162,89,255,0.04) 0%, transparent 55%),
+    var(--color-bg);
+}
+
+/* Dot grid overlay */
+.os-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, #1c1c2e 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── OFFICE FLOOR ───────────────────────────────────────────────────────── */
+.office-floor {
+  position: relative;
+  overflow: auto;
+  padding: 24px;
+}
+
+/* Scan-line over office */
+.office-floor::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(79,126,255,0.25) 30%, rgba(162,89,255,0.25) 70%, transparent 100%);
+  animation: scanline 10s linear infinite;
+  pointer-events: none;
+}
+
+/* ─── INPUT BOX FOCUS ────────────────────────────────────────────────────── */
+.chat-input-box:focus-within {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent-glow);
+}
