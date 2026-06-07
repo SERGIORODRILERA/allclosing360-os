@@ -167,6 +167,17 @@ export const DIRECTORS: DirectorConfig[] = [
     initials: "FC",
     department: "Operaciones",
   },
+  {
+    id: "director_producto",
+    name: "Director de Producto",
+    shortName: "Producto",
+    description: "GitHub, pull requests y desarrollo de producto",
+    color: "#0ea5e9",
+    icon: "🚀",
+    humanName: "Valentina K.",
+    initials: "VK",
+    department: "Producto",
+  },
 ];
 
 export const DIRECTOR_MAP = Object.fromEntries(

@@ -31,6 +31,12 @@ export interface UITask {
   order?: string;
   // Manus artifact (real file created by Claude tool use)
   artifact?: TaskArtifact;
+  // Real usage from API
+  realTokens?: number;
+  realCostUSD?: number;
+  // GitHub PR (director_producto)
+  prUrl?: string;
+  prNumber?: number;
 }
 
 interface TasksPanelProps {
@@ -157,12 +163,17 @@ function TaskItem({ task, onViewResult }: { task: UITask; onViewResult?: (t: UIT
         </div>
       )}
 
-      {/* Consumption row */}
-      {task.estimatedTokens && task.status !== "pending" && (
+      {/* Real usage row */}
+      {task.status !== "pending" && (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {task.estimatedCostUSD !== undefined && (
+          {(task.realTokens ?? task.estimatedTokens) && (
             <span style={{ fontSize: 9, color: "var(--color-text-dim)", background: "var(--color-surface-4)", borderRadius: 4, padding: "1px 5px" }}>
-              ${task.estimatedCostUSD} USD
+              {(task.realTokens ?? task.estimatedTokens)!.toLocaleString()} tokens
+            </span>
+          )}
+          {(task.realCostUSD ?? task.estimatedCostUSD) !== undefined && (
+            <span style={{ fontSize: 9, color: "var(--color-text-dim)", background: "var(--color-surface-4)", borderRadius: 4, padding: "1px 5px" }}>
+              ${((task.realCostUSD ?? task.estimatedCostUSD) ?? 0).toFixed(4)} USD
             </span>
           )}
           {task.riskLevel && (
@@ -175,10 +186,36 @@ function TaskItem({ task, onViewResult }: { task: UITask; onViewResult?: (t: UIT
                 padding: "1px 5px",
               }}
             >
-              Riesgo {task.riskLevel === "low" ? "bajo" : task.riskLevel === "medium" ? "medio" : "alto"}
+              {task.riskLevel === "low" ? "bajo" : task.riskLevel === "medium" ? "medio" : "alto"}
             </span>
           )}
         </div>
+      )}
+
+      {/* PR link button */}
+      {task.prUrl && (
+        <a
+          href={task.prUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            width: "100%",
+            padding: "6px 0",
+            borderRadius: 6,
+            background: "rgba(14,165,233,0.1)",
+            border: "1px solid rgba(14,165,233,0.3)",
+            color: "#0ea5e9",
+            fontSize: 11,
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 5,
+            textDecoration: "none",
+          }}
+        >
+          🔗 Ver PR #{task.prNumber}
+        </a>
       )}
 
       {/* Ver resultado button */}

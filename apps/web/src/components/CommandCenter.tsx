@@ -19,7 +19,7 @@ import { DIRECTOR_MAP } from "../lib/engines";
 import { detectIntent } from "../lib/intent";
 import { SKILL_MAP } from "../lib/skills";
 import { getSkillResponse } from "../lib/mock-responses";
-import { getStepsForSkill, estimateTokens, estimateCost, estimateRisk, generateResult } from "../lib/task-engine";
+import { getStepsForSkill, estimateRisk } from "../lib/task-engine";
 import { DEFAULT_COMPANY_ID, COMPANY_MAP } from "../lib/companies";
 import {
   saveSession,
@@ -40,61 +40,19 @@ const BOOT_MESSAGES: Message[] = [
   {
     id: "sys-boot",
     role: "system",
-    text: "ALLCLOSING360 OS v4.0 — Live AI Office iniciado",
+    text: "ALLCLOSING360 OS v5.0 — Live AI Office",
     timestamp: new Date(),
   },
   {
     id: "ai-welcome",
     role: "assistant",
-    text: "Bienvenido, CEO. Tengo 14 directores IA activos, 35 skills listas y 20 conectores disponibles. Escribe o dicta una orden y el sistema asignará automáticamente al director y skill óptimos.",
+    text: "Bienvenido, CEO. Tengo 15 directores IA activos (incluye Director de Producto con GitHub), 35 skills listas y voz de entrada/salida. Escribe o dicta una orden — el sistema asigna director y skill en tiempo real.",
     timestamp: new Date(),
   },
 ];
 
-const SEED_TASKS: UITask[] = [
-  {
-    id: "seed-1",
-    title: "Optimizando mix de ofertas activas",
-    status: "in_progress",
-    engineId: "director_comercial",
-    skillId: "crear_oferta_irresistible",
-    skillName: "Crear oferta irresistible",
-    progress: 67,
-    createdAt: new Date(),
-    estimatedTokens: 2400,
-    estimatedCostUSD: 0.048,
-    riskLevel: "low",
-    currentStep: "Analizando mercado objetivo",
-  },
-  {
-    id: "seed-2",
-    title: "Análisis de conversión landing Q4",
-    status: "in_progress",
-    engineId: "director_embudos",
-    skillId: "crear_landing",
-    skillName: "Crear landing page",
-    progress: 34,
-    createdAt: new Date(),
-    estimatedTokens: 3200,
-    estimatedCostUSD: 0.064,
-    riskLevel: "medium",
-    currentStep: "Estructurando copy persuasivo",
-  },
-  {
-    id: "seed-3",
-    title: "Reporte ejecutivo semanal completado",
-    status: "completed",
-    engineId: "ceo_advisor",
-    skillId: "crear_reporte_ejecutivo",
-    skillName: "Crear reporte ejecutivo",
-    progress: 100,
-    createdAt: new Date(),
-    estimatedTokens: 1800,
-    estimatedCostUSD: 0.036,
-    riskLevel: "low",
-    result: generateResult("crear_reporte_ejecutivo"),
-  },
-];
+// No seed tasks — progress is real, not simulated
+const SEED_TASKS: UITask[] = [];
 
 // ─── AppShell ──────────────────────────────────────────────────────────────
 export default function CommandCenter() {
@@ -107,7 +65,7 @@ export default function CommandCenter() {
   const [selectedTask, setSelectedTask] = useState<UITask | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([
-    { id: "sys-boot", type: "system", title: "ALLCLOSING360 OS iniciado", detail: "14 directores IA · 35 skills · sistema listo", timestamp: new Date() },
+    { id: "sys-boot", type: "system", title: "ALLCLOSING360 OS v5 iniciado", detail: "15 directores IA · 35 skills · oficina 3D · voz · GitHub", timestamp: new Date() },
   ]);
   const [companyId, setCompanyId] = useState(DEFAULT_COMPANY_ID);
   const sessionLoaded = useRef(false);
@@ -145,40 +103,15 @@ export default function CommandCenter() {
     ]);
   }, []);
 
-  // ── Auto-advance task progress + notifications ──
+  // ── Watch completed tasks for notifications ──
   useEffect(() => {
-    const id = setInterval(() => {
-      setTasks((prev) =>
-        prev.map((t) => {
-          if (t.status !== "in_progress") return t;
-          const next = Math.min(t.progress + Math.floor(Math.random() * 4 + 1), 100);
-          const steps = getStepsForSkill(t.skillId ?? "");
-          const stepIdx = Math.floor((next / 100) * (steps.length - 1));
-          const currentStep = steps[stepIdx] ?? steps[0] ?? "Procesando…";
-
-          if (next >= 100) {
-            const result = t.result ?? generateResult(t.skillId ?? "");
-            if (!notifiedTasks.current.has(t.id)) {
-              notifiedTasks.current.add(t.id);
-              setTimeout(() => {
-                setTasks((cur) => {
-                  const completed = cur.find((x) => x.id === t.id);
-                  if (completed) {
-                    setNotifications((n) => [...n, taskToNotification(completed)]);
-                  }
-                  return cur;
-                });
-                pushEvent({ type: "task_complete", directorId: t.engineId, title: t.title, skillName: t.skillName });
-              }, 200);
-            }
-            return { ...t, progress: 100, status: "completed", currentStep: "Completado", result };
-          }
-          return { ...t, progress: next, currentStep };
-        }),
-      );
-    }, 3500);
-    return () => clearInterval(id);
-  }, [pushEvent]);
+    for (const t of tasks) {
+      if (t.status === "completed" && !notifiedTasks.current.has(t.id)) {
+        notifiedTasks.current.add(t.id);
+        setNotifications((n) => [...n, taskToNotification(t)]);
+      }
+    }
+  }, [tasks]);
 
   // ── View result handler ──
   const handleViewResult = useCallback((taskId: string) => {
@@ -210,10 +143,8 @@ export default function CommandCenter() {
       setIsProcessing(true);
       setActiveDirectorId(directorId);
 
-      const estimatedTok = estimateTokens(skillId);
       const steps = getStepsForSkill(skillId);
 
-      // Optimistic task — shows immediately with progress
       const optimisticTask: UITask = {
         id: taskId,
         title: text.trim().slice(0, 60) + (text.length > 60 ? "…" : ""),
@@ -224,8 +155,6 @@ export default function CommandCenter() {
         progress: 5,
         createdAt: new Date(),
         order: text.trim(),
-        estimatedTokens: estimatedTok,
-        estimatedCostUSD: estimateCost(estimatedTok),
         riskLevel: estimateRisk(skillId),
         currentStep: steps[0] ?? "Iniciando…",
       };
@@ -293,16 +222,20 @@ export default function CommandCenter() {
                 chatResponse: string; taskTitle: string; taskResult: string;
                 artifact?: TaskArtifact; model?: string;
                 inputTokens?: number; outputTokens?: number;
+                prUrl?: string; prNumber?: number;
               };
 
               const isSonnet = (d.model ?? "").includes("sonnet");
-              const pricePerM = isSonnet ? 15 : 4;
-              const realCost = Math.round(((d.outputTokens ?? 0) / 1_000_000) * pricePerM * 10000) / 10000;
+              const priceIn  = isSonnet ? 3 : 0.8;
+              const priceOut = isSonnet ? 15 : 4;
+              const realCost = Math.round(
+                (((d.inputTokens ?? 0) / 1_000_000) * priceIn +
+                 ((d.outputTokens ?? 0) / 1_000_000) * priceOut) * 10000
+              ) / 10000;
               const realTok = (d.inputTokens ?? 0) + (d.outputTokens ?? 0);
 
               pushEvent({ type: "task_complete", directorId, title: d.taskTitle || optimisticTask.title, skillName: skill.name });
 
-              // Finalize task
               setTasks((prev) => prev.map((t) =>
                 t.id === taskId
                   ? {
@@ -310,11 +243,13 @@ export default function CommandCenter() {
                       title: d.taskTitle || t.title,
                       status: "completed",
                       progress: 100,
-                      currentStep: "Completado",
+                      currentStep: `✓ ${realTok > 0 ? realTok.toLocaleString() + " tokens · $" + realCost.toFixed(4) : "Completado"}`,
                       result: d.taskResult,
                       artifact: d.artifact,
                       estimatedTokens: realTok || t.estimatedTokens,
                       estimatedCostUSD: realCost || t.estimatedCostUSD,
+                      prUrl: d.prUrl,
+                      prNumber: d.prNumber,
                     }
                   : t
               ));
@@ -342,13 +277,13 @@ export default function CommandCenter() {
       } catch (err) {
         console.warn("[CommandCenter] Streaming failed, using mock fallback:", err);
         const mock = getSkillResponse(skillId);
-        const taskResult = generateResult(skillId);
+        const fallbackResult = "[Error al conectar con la IA — revisa la configuración de ANTHROPIC_API_KEY]";
 
-        pushEvent({ type: "task_complete", directorId, title: mock.taskTitle || optimisticTask.title, skillName: skill.name });
+        pushEvent({ type: "task_error", directorId, title: "Error en tarea", detail: String(err), skillName: skill.name });
 
         setTasks((prev) => prev.map((t) =>
           t.id === taskId
-            ? { ...t, title: mock.taskTitle || t.title, status: "completed", progress: 100, currentStep: "Completado", result: taskResult }
+            ? { ...t, title: mock.taskTitle || t.title, status: "failed", progress: 0, currentStep: "Error al procesar", result: fallbackResult }
             : t
         ));
 

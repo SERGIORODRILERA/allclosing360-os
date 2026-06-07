@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { EngineId } from "@ac360/types";
-import type { UITask } from "./TasksPanel";
+import type { UITask } from "./TasksPanel"; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 const SimsOffice3D = dynamic(() => import("./SimsOffice3D"), {
   ssr: false,

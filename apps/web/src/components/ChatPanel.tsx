@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, KeyboardEvent } from "react";
+import { useRef, useEffect, useState, useCallback, KeyboardEvent } from "react";
 import type { EngineId } from "@ac360/types";
 import MessageFeed, { type Message } from "./MessageFeed";
 import TasksPanel, { type UITask } from "./TasksPanel";
@@ -38,18 +38,77 @@ export default function ChatPanel({
   const [micActive, setMicActive] = useState(false);
   const [micSupported, setMicSupported] = useState(true);
   const [interimText, setInterimText] = useState("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const feedRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
+  const ttsChromeFix = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isSpeakingRef = useRef(false);
+  const micShouldRestart = useRef(false);
 
   const activeTasks = tasks.filter((t) => t.status === "in_progress").length;
   const activeDirector = activeDirectorId ? DIRECTOR_MAP[activeDirectorId] : null;
 
-  // Check mic support on mount
   useEffect(() => {
     const w = window as unknown as Record<string, unknown>;
     setMicSupported(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
+  }, []);
+
+  // TTS: speak text chunked by sentence, Chrome-safe
+  const speak = useCallback((text: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    if (ttsChromeFix.current) clearInterval(ttsChromeFix.current);
+
+    const sentences = text.match(/[^.!?¡¿]+[.!?]+/g) ?? [text];
+    let idx = 0;
+
+    const getVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      return (
+        voices.find((v) => v.lang.startsWith("es") && v.localService) ??
+        voices.find((v) => v.lang.startsWith("es")) ??
+        null
+      );
+    };
+
+    const speakNext = () => {
+      if (idx >= sentences.length) {
+        isSpeakingRef.current = false;
+        setIsSpeaking(false);
+        if (ttsChromeFix.current) clearInterval(ttsChromeFix.current);
+        return;
+      }
+      const utt = new SpeechSynthesisUtterance(sentences[idx++]);
+      const voice = getVoice();
+      if (voice) utt.voice = voice;
+      utt.lang = "es-ES";
+      utt.rate = 1.05;
+      utt.pitch = 1.0;
+      utt.onend = () => setTimeout(speakNext, 80);
+      utt.onerror = () => setTimeout(speakNext, 80);
+      window.speechSynthesis.speak(utt);
+    };
+
+    isSpeakingRef.current = true;
+    setIsSpeaking(true);
+    speakNext();
+
+    // Chrome cuts out after ~15s — keep it alive with pause/resume
+    ttsChromeFix.current = setInterval(() => {
+      if (isSpeakingRef.current && window.speechSynthesis.speaking) {
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+      }
+    }, 13000);
+  }, []);
+
+  const stopSpeaking = useCallback(() => {
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    isSpeakingRef.current = false;
+    setIsSpeaking(false);
+    if (ttsChromeFix.current) clearInterval(ttsChromeFix.current);
   }, []);
 
   // Scroll to bottom on new messages
@@ -57,6 +116,16 @@ export default function ChatPanel({
     const el = feedRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
+
+  // Auto-speak the last assistant message (non-typing)
+  const lastSpokenId = useRef<string | null>(null);
+  useEffect(() => {
+    const last = [...messages].reverse().find((m) => m.role === "assistant" && !m.isTyping && m.text);
+    if (last && last.id !== lastSpokenId.current) {
+      lastSpokenId.current = last.id;
+      speak(last.text);
+    }
+  }, [messages, speak]);
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -82,6 +151,7 @@ export default function ChatPanel({
   }
 
   function stopMic() {
+    micShouldRestart.current = false;
     recognitionRef.current?.stop();
     recognitionRef.current = null;
     setMicActive(false);
@@ -99,7 +169,7 @@ export default function ChatPanel({
 
     const r = new API();
     r.lang = "es-ES";
-    r.continuous = false;
+    r.continuous = true;       // don't stop after each sentence
     r.interimResults = true;
     r.onstart = () => setMicActive(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,13 +184,24 @@ export default function ChatPanel({
       if (final) {
         setValue((prev) => (prev ? prev + " " + final : final).trim());
         setInterimText("");
-        textareaRef.current?.focus();
       } else {
         setInterimText(interim);
       }
     };
-    r.onerror = () => stopMic();
-    r.onend = () => { setMicActive(false); setInterimText(""); recognitionRef.current = null; };
+    r.onerror = (e: { error: string }) => {
+      if (e.error !== "no-speech") stopMic();
+    };
+    r.onend = () => {
+      // Auto-restart if user hasn't stopped manually
+      if (micShouldRestart.current && recognitionRef.current) {
+        try { recognitionRef.current.start(); } catch { /* already running */ }
+      } else {
+        setMicActive(false);
+        setInterimText("");
+        recognitionRef.current = null;
+      }
+    };
+    micShouldRestart.current = true;
     r.start();
     recognitionRef.current = r;
   }
@@ -153,6 +234,19 @@ export default function ChatPanel({
             Command Chat
           </div>
           <div style={{ display: "flex", gap: 5 }}>
+            {isSpeaking && (
+              <button
+                onClick={stopSpeaking}
+                title="Silenciar voz"
+                style={{
+                  fontSize: 11, padding: "4px 8px", borderRadius: 6,
+                  background: "rgba(79,126,255,0.15)", border: "1px solid var(--color-accent)",
+                  color: "var(--color-accent)",
+                }}
+              >
+                🔊
+              </button>
+            )}
             <button
               onClick={onExport}
               title="Exportar sesión"

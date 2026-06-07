@@ -12,7 +12,8 @@ export type EngineId =
   | "director_automatizaciones"
   | "director_crm_ghl"
   | "director_financiero"
-  | "director_operaciones";
+  | "director_operaciones"
+  | "director_producto";
 
 export type EngineStatus = "active" | "idle" | "paused" | "error";
 
@@ -41,4 +42,5 @@ export const ENGINE_CONFIG: Record<EngineId, { name: string; description: string
   director_crm_ghl: { name: "Director CRM/GHL", description: "CRM y gestión de contactos", color: "#eab308" },
   director_financiero: { name: "Director Financiero", description: "Control financiero y proyecciones", color: "#10b981" },
   director_operaciones: { name: "Director de Operaciones", description: "Procesos operativos y SOPs", color: "#8b5cf6" },
+  director_producto: { name: "Director de Producto", description: "GitHub, PRs y desarrollo de producto", color: "#0ea5e9" },
 };

@@ -41,7 +41,10 @@ export type SkillId =
   | "crear_base_conocimiento"
   // Análisis
   | "analizar_llamada"
-  | "crear_landing";
+  | "crear_landing"
+  // Producto / GitHub
+  | "leer_repositorio"
+  | "crear_pull_request";
 
 export interface Skill {
   id: SkillId;
@@ -446,6 +449,29 @@ export const SKILLS: Skill[] = [
     category: "Análisis",
     outputLabel: "Landing page completa",
     estimatedMinutes: 12,
+  },
+  // ── PRODUCTO / GITHUB ────────────────────────────────────────────────────
+  {
+    id: "leer_repositorio",
+    name: "Leer repositorio",
+    description: "Explora la estructura y archivos del repositorio GitHub",
+    icon: "🔍",
+    primaryDirector: "director_producto",
+    keywords: ["repo", "repositorio", "código", "codigo", "github", "archivos", "estructura", "leer", "explorar", "codebase"],
+    category: "Producto",
+    outputLabel: "Análisis de repositorio",
+    estimatedMinutes: 3,
+  },
+  {
+    id: "crear_pull_request",
+    name: "Crear Pull Request",
+    description: "Propone cambios de código mediante un PR en GitHub",
+    icon: "🚀",
+    primaryDirector: "director_producto",
+    keywords: ["pull request", "pr", "cambio", "feature", "fix", "bug", "refactor", "mejora", "implementar", "github", "código", "codigo", "commit", "branch"],
+    category: "Producto",
+    outputLabel: "Pull Request en GitHub",
+    estimatedMinutes: 8,
   },
 ];
 

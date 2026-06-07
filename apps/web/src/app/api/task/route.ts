@@ -9,14 +9,12 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const SONNET = "claude-sonnet-4-6";
 const HAIKU  = "claude-haiku-4-5-20251001";
 
-// Skills that need deeper model
 const POWER_SKILLS = new Set([
   "crear_landing", "crear_reporte_ejecutivo", "crear_sop_operativo",
   "crear_campana_meta_ads", "crear_estrategia_seo", "crear_propuesta_comercial",
+  "leer_repositorio", "crear_pull_request",
 ]);
 
-// On Vercel, public/ is read-only → files won't be serveable via URL.
-// We always return content inline; file write is best-effort (works on VPS, skipped on Vercel).
 function tryWriteFile(filename: string, content: string): string | null {
   try {
     const d = path.join(process.cwd(), "public", "generated");
@@ -24,12 +22,13 @@ function tryWriteFile(filename: string, content: string): string | null {
     writeFileSync(path.join(d, filename), content, "utf-8");
     return "/generated/" + filename;
   } catch {
-    return null; // Vercel or read-only FS — content returned inline
+    return null;
   }
 }
 
 // ─── Tool definitions ────────────────────────────────────────────────────────
-const TOOLS: Anthropic.Tool[] = [
+
+const BASE_TOOLS: Anthropic.Tool[] = [
   {
     name: "create_html_file",
     description:
@@ -85,7 +84,160 @@ const TOOLS: Anthropic.Tool[] = [
   },
 ];
 
-function skillToToolHint(skillId: string): string {
+const GITHUB_TOOLS: Anthropic.Tool[] = [
+  {
+    name: "github_read_repo",
+    description:
+      "Read files or directory tree from the GitHub repository. Use to understand the codebase before proposing changes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description: "File path or directory path. Use empty string '' for repo root. Example: 'apps/web/src'.",
+        },
+      },
+      required: ["path"],
+    },
+  },
+  {
+    name: "github_create_pr",
+    description:
+      "Create a pull request on GitHub with new or modified files. Creates a branch, commits the files, and opens the PR.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "PR title. Short, imperative." },
+        body: { type: "string", description: "PR description in markdown. Explain what and why." },
+        branch: { type: "string", description: "New branch name, e.g. 'feature/add-onboarding-flow'." },
+        files: {
+          type: "array",
+          description: "Files to create or update in the PR.",
+          items: {
+            type: "object",
+            properties: {
+              path: { type: "string", description: "File path from repo root, e.g. 'apps/web/src/lib/utils.ts'" },
+              content: { type: "string", description: "Full file content." },
+            },
+            required: ["path", "content"],
+          },
+        },
+      },
+      required: ["title", "body", "branch", "files"],
+    },
+  },
+];
+
+// ─── GitHub helpers ───────────────────────────────────────────────────────────
+
+interface GHFile { path: string; content: string }
+
+async function githubReadPath(repoFull: string, token: string, filePath: string): Promise<string> {
+  const url = filePath
+    ? `https://api.github.com/repos/${repoFull}/contents/${encodeURIComponent(filePath)}`
+    : `https://api.github.com/repos/${repoFull}/contents`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+  });
+
+  if (!res.ok) return `Error ${res.status}: ${await res.text()}`;
+  const data: unknown = await res.json();
+
+  if (Array.isArray(data)) {
+    // Directory listing
+    return (data as { name: string; type: string; size?: number }[])
+      .map((f) => `${f.type === "dir" ? "📁" : "📄"} ${f.name}${f.size ? ` (${f.size}B)` : ""}`)
+      .join("\n");
+  }
+
+  const item = data as { type: string; encoding?: string; content?: string };
+  if (item.type === "file" && item.encoding === "base64" && item.content) {
+    return Buffer.from(item.content.replace(/\n/g, ""), "base64").toString("utf-8");
+  }
+  return JSON.stringify(data, null, 2);
+}
+
+async function githubCreatePR(
+  repoFull: string,
+  token: string,
+  title: string,
+  body: string,
+  branch: string,
+  files: GHFile[],
+): Promise<{ prUrl: string; prNumber: number } | { error: string }> {
+  const headers: HeadersInit = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Content-Type": "application/json",
+  };
+
+  // 1. Get default branch HEAD SHA
+  const repoRes = await fetch(`https://api.github.com/repos/${repoFull}`, { headers });
+  if (!repoRes.ok) return { error: `Repo fetch failed: ${repoRes.status}` };
+  const repo = await repoRes.json() as { default_branch: string };
+  const defaultBranch = repo.default_branch;
+
+  const refRes = await fetch(`https://api.github.com/repos/${repoFull}/git/ref/heads/${defaultBranch}`, { headers });
+  if (!refRes.ok) return { error: `Ref fetch failed: ${refRes.status}` };
+  const ref = await refRes.json() as { object: { sha: string } };
+  const baseSha = ref.object.sha;
+
+  // 2. Get base tree SHA
+  const commitRes = await fetch(`https://api.github.com/repos/${repoFull}/git/commits/${baseSha}`, { headers });
+  if (!commitRes.ok) return { error: `Commit fetch failed: ${commitRes.status}` };
+  const commit = await commitRes.json() as { tree: { sha: string } };
+  const baseTreeSha = commit.tree.sha;
+
+  // 3. Create blobs + new tree
+  const treeItems: { path: string; mode: string; type: string; sha: string }[] = [];
+  for (const file of files) {
+    const blobRes = await fetch(`https://api.github.com/repos/${repoFull}/git/blobs`, {
+      method: "POST", headers,
+      body: JSON.stringify({ content: Buffer.from(file.content).toString("base64"), encoding: "base64" }),
+    });
+    if (!blobRes.ok) return { error: `Blob create failed for ${file.path}` };
+    const blob = await blobRes.json() as { sha: string };
+    treeItems.push({ path: file.path, mode: "100644", type: "blob", sha: blob.sha });
+  }
+
+  const treeRes = await fetch(`https://api.github.com/repos/${repoFull}/git/trees`, {
+    method: "POST", headers,
+    body: JSON.stringify({ base_tree: baseTreeSha, tree: treeItems }),
+  });
+  if (!treeRes.ok) return { error: `Tree create failed: ${treeRes.status}` };
+  const tree = await treeRes.json() as { sha: string };
+
+  // 4. Create commit
+  const newCommitRes = await fetch(`https://api.github.com/repos/${repoFull}/git/commits`, {
+    method: "POST", headers,
+    body: JSON.stringify({ message: title, tree: tree.sha, parents: [baseSha] }),
+  });
+  if (!newCommitRes.ok) return { error: `Commit create failed: ${newCommitRes.status}` };
+  const newCommit = await newCommitRes.json() as { sha: string };
+
+  // 5. Create branch
+  const branchRes = await fetch(`https://api.github.com/repos/${repoFull}/git/refs`, {
+    method: "POST", headers,
+    body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: newCommit.sha }),
+  });
+  if (!branchRes.ok) return { error: `Branch create failed: ${branchRes.status}` };
+
+  // 6. Create PR
+  const prRes = await fetch(`https://api.github.com/repos/${repoFull}/pulls`, {
+    method: "POST", headers,
+    body: JSON.stringify({ title, body, head: branch, base: defaultBranch }),
+  });
+  if (!prRes.ok) return { error: `PR create failed: ${prRes.status} — ${await prRes.text()}` };
+  const pr = await prRes.json() as { html_url: string; number: number };
+  return { prUrl: pr.html_url, prNumber: pr.number };
+}
+
+// ─── Tool hint ────────────────────────────────────────────────────────────────
+
+function skillToToolHint(skillId: string, directorId: string): string {
+  if (directorId === "director_producto") return "github";
   const HTML = ["crear_landing"];
   const CODE = ["crear_automatizacion_ghl", "crear_flujo_n8n", "crear_integracion_api", "crear_prompt_agente", "crear_base_conocimiento"];
   if (HTML.includes(skillId)) return "create_html_file";
@@ -104,6 +256,8 @@ function buildSystem(director: DirectorShape | undefined, skill: SkillShape | un
       "USA la herramienta create_code_file. El codigo debe ser funcional y completo. Sin stubs ni TODOs.",
     create_document:
       "USA la herramienta create_document. El documento debe ser completo, profesional y totalmente accionable. Sin [INSERTAR AQUI]. Incluye numeros, ejemplos reales y proximas acciones.",
+    github:
+      "Eres el Director de Producto con acceso completo a GitHub. Usa github_read_repo para explorar el repositorio y entender el codigo, luego usa github_create_pr para proponer cambios concretos. Siempre lee primero antes de crear el PR.",
   };
 
   return (
@@ -116,7 +270,6 @@ function buildSystem(director: DirectorShape | undefined, skill: SkillShape | un
   );
 }
 
-// ─── Artifact type ────────────────────────────────────────────────────────────
 export interface TaskArtifact {
   type: "html" | "code" | "document";
   url:      string;
@@ -126,6 +279,7 @@ export interface TaskArtifact {
 }
 
 // ─── Route ───────────────────────────────────────────────────────────────────
+
 export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
 
@@ -143,8 +297,14 @@ export async function POST(req: NextRequest) {
   type SkKey  = keyof typeof SKILL_MAP;
   const director = DIRECTOR_MAP[directorId as DirKey];
   const skill    = SKILL_MAP[skillId as SkKey];
-  const toolHint = skillToToolHint(skillId);
-  const model    = POWER_SKILLS.has(skillId) ? SONNET : HAIKU;
+  const toolHint = skillToToolHint(skillId, directorId);
+  const isGitHub = toolHint === "github";
+  const model    = POWER_SKILLS.has(skillId) || isGitHub ? SONNET : HAIKU;
+
+  const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+  const GITHUB_REPO  = process.env.GITHUB_REPO;
+
+  const tools: Anthropic.Tool[] = isGitHub ? GITHUB_TOOLS : BASE_TOOLS;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -156,18 +316,15 @@ export async function POST(req: NextRequest) {
         send("step", { label: "Iniciando tarea…", index: 0 });
 
         const systemPrompt = buildSystem(director, skill, companyName, toolHint);
+        const messages: Anthropic.MessageParam[] = [{ role: "user", content: text }];
 
-        const messages: Anthropic.MessageParam[] = [
-          { role: "user", content: text },
-        ];
-
-        send("step", { label: "Analizando solicitud con IA…", index: 1 });
+        send("step", { label: isGitHub ? "Explorando repositorio GitHub…" : "Analizando solicitud con IA…", index: 1 });
 
         let response = await client.messages.create({
           model,
           max_tokens: 8000,
           system: systemPrompt,
-          tools: TOOLS,
+          tools,
           tool_choice: { type: "any" },
           messages,
         });
@@ -176,9 +333,10 @@ export async function POST(req: NextRequest) {
         let chatResponse = "";
         let taskTitle = skill?.name ?? "Tarea";
         let iterations = 0;
+        let prUrl: string | undefined;
+        let prNumber: number | undefined;
 
-        // ── Agentic tool-use loop ─────────────────────────────────────────────
-        while (response.stop_reason === "tool_use" && iterations < 4) {
+        while (response.stop_reason === "tool_use" && iterations < 6) {
           iterations++;
           const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
@@ -220,24 +378,55 @@ export async function POST(req: NextRequest) {
                 send("artifact", { type: "code", url, filename: inp.filename, language: inp.language });
                 toolResults.push({ type: "tool_result", tool_use_id: block.id, content: "Code file created." });
               }
+
+              // ── github_read_repo ──────────────────────────────────────────
+              else if (block.name === "github_read_repo") {
+                const inp = block.input as { path: string };
+                if (!GITHUB_TOKEN || !GITHUB_REPO) {
+                  toolResults.push({ type: "tool_result", tool_use_id: block.id, content: "Error: GITHUB_TOKEN o GITHUB_REPO no configurados en el servidor." });
+                  continue;
+                }
+                send("step", { label: `Leyendo ${inp.path || "raíz del repo"}…`, index: 2 });
+                const content = await githubReadPath(GITHUB_REPO, GITHUB_TOKEN, inp.path);
+                toolResults.push({ type: "tool_result", tool_use_id: block.id, content });
+              }
+
+              // ── github_create_pr ──────────────────────────────────────────
+              else if (block.name === "github_create_pr") {
+                const inp = block.input as { title: string; body: string; branch: string; files: GHFile[] };
+                if (!GITHUB_TOKEN || !GITHUB_REPO) {
+                  toolResults.push({ type: "tool_result", tool_use_id: block.id, content: "Error: GITHUB_TOKEN o GITHUB_REPO no configurados." });
+                  continue;
+                }
+                send("step", { label: "Creando Pull Request…", index: 3 });
+                taskTitle = inp.title;
+                const result = await githubCreatePR(GITHUB_REPO, GITHUB_TOKEN, inp.title, inp.body, inp.branch, inp.files);
+                if ("error" in result) {
+                  toolResults.push({ type: "tool_result", tool_use_id: block.id, content: "Error: " + result.error });
+                } else {
+                  prUrl = result.prUrl;
+                  prNumber = result.prNumber;
+                  send("artifact", { type: "pr", prUrl, prNumber });
+                  toolResults.push({ type: "tool_result", tool_use_id: block.id, content: `PR #${result.prNumber} creado: ${result.prUrl}` });
+                }
+              }
             }
           }
 
           messages.push({ role: "assistant", content: response.content });
           messages.push({ role: "user", content: toolResults });
 
-          send("step", { label: "Finalizando entregable…", index: 3 });
+          send("step", { label: "Finalizando entregable…", index: 4 });
 
           response = await client.messages.create({
             model,
-            max_tokens: 512,
+            max_tokens: 1024,
             system: systemPrompt,
-            tools: TOOLS,
+            tools,
             messages,
           });
         }
 
-        // Final text
         for (const block of response.content) {
           if (block.type === "text" && block.text.length > chatResponse.length) {
             chatResponse = block.text;
@@ -254,6 +443,8 @@ export async function POST(req: NextRequest) {
           model,
           inputTokens:  response.usage.input_tokens,
           outputTokens: response.usage.output_tokens,
+          prUrl,
+          prNumber,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Error desconocido";
