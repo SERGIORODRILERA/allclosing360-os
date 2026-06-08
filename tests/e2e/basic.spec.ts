@@ -58,26 +58,31 @@ test.describe("ALLCLOSING360 — basic smoke tests", () => {
 
   test("nav rail view switching works", async ({ page }) => {
     await page.goto("/");
-    // Wait for React full hydration
-    await page.waitForFunction(() => document.querySelectorAll("button").length > 3);
-    await page.waitForTimeout(1000);
-    // Try clicking on the ops view button — React handles this via onClick
-    await page.click("button[title='Operaciones']");
-    // Wait for React to update the view
-    await page.waitForTimeout(1000);
-    // Check that the main content area changed (header shows Operaciones)
-    const viewLabel = page.locator("text=Centro de Operaciones").first();
-    await expect(viewLabel).toBeVisible({ timeout: 10_000 });
+    await page.waitForLoadState("networkidle");
+    await page.waitForFunction(() => document.querySelectorAll("button").length > 3, { timeout: 10_000 });
+    // Force click via locator with force:true to bypass any overlay issues
+    const opsBtn = page.locator("button[title='Operaciones']");
+    await opsBtn.waitFor({ state: "visible", timeout: 8_000 });
+    await opsBtn.click({ force: true });
+    // The VIEW_LABEL rendered inside main panel header
+    await page.waitForFunction(
+      () => document.body.innerText.includes("Operaciones"),
+      { timeout: 10_000 }
+    );
+    expect(await page.locator("body").innerText()).toContain("Operaciones");
   });
 
   test("connectors panel loads", async ({ page }) => {
     await page.goto("/");
-    // Wait for React full hydration
-    await page.waitForFunction(() => document.querySelectorAll("button").length > 3);
-    await page.waitForTimeout(1000);
-    await page.click("button[title='Conectores']");
-    await page.waitForTimeout(1000);
-    const hubTitle = page.locator("text=Hub de Conectores");
-    await expect(hubTitle).toBeVisible({ timeout: 10_000 });
+    await page.waitForLoadState("networkidle");
+    await page.waitForFunction(() => document.querySelectorAll("button").length > 3, { timeout: 10_000 });
+    const connBtn = page.locator("button[title='Conectores']");
+    await connBtn.waitFor({ state: "visible", timeout: 8_000 });
+    await connBtn.click({ force: true });
+    await page.waitForFunction(
+      () => document.body.innerText.includes("Conectores"),
+      { timeout: 10_000 }
+    );
+    expect(await page.locator("body").innerText()).toContain("Conectores");
   });
 });

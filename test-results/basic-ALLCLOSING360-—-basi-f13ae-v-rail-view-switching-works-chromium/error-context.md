@@ -12,43 +12,89 @@
 # Error details
 
 ```
-Error: expect(locator).toBeVisible() failed
-
-Locator: locator('text=Centro de Operaciones').first()
-Expected: visible
-Timeout: 10000ms
-Error: element(s) not found
-
-Call log:
-  - Expect "toBeVisible" with timeout 10000ms
-  - waiting for locator('text=Centro de Operaciones').first()
-
+Test timeout of 30000ms exceeded.
 ```
 
+```
+Error: page.waitForFunction: Test timeout of 30000ms exceeded.
+```
+
+# Page snapshot
+
 ```yaml
-- navigation:
-  - text: AC
-  - button "🏢"
-  - button "⚡"
-  - button "🎯"
-  - button "🧠"
-  - button "🔌"
-  - text: CEO
-- main:
-  - button "🚀 AllClosing360 Agencia IA ▼"
-  - text: Oficina Virtual 0 activas Cargando oficina 3D… Timeline Acciones 1 ⚡ SISTEMA hace 0s ALLCLOSING360 OS v5 iniciado 15 directores IA · 35 skills · oficina 3D · voz · GitHub 0 Completas 0 Pasos 0 Errores
-- complementary:
-  - text: Command Chat
-  - button "⬇️"
-  - button "🗑️"
-  - text: Online ALLCLOSING360 OS v5.0 — Live AI Office 07:31 🤖 Bienvenido, CEO. Tengo 15 directores IA activos (incluye Director de Producto con GitHub), 35 skills listas y voz de entrada/salida. Escribe o dicta una orden — el sistema asigna director y skill en tiempo real. 07:31
-  - textbox "Escribe u ordena al sistema…"
-  - button "🎙"
-  - button "↑" [disabled]
-  - button "Crear oferta irresistible"
-  - button "Campaña Meta Ads"
-  - button "Reporte ejecutivo"
-  - button "SOP operativo"
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - generic [ref=e4]: AC
+    - generic [ref=e5]:
+      - button "🏢" [ref=e6] [cursor=pointer]: 🏢
+      - button "⚡" [active] [ref=e8] [cursor=pointer]
+      - button "🎯" [ref=e9] [cursor=pointer]
+      - button "🧠" [ref=e10] [cursor=pointer]
+      - button "🔌" [ref=e11] [cursor=pointer]
+    - generic "CEO — Tú" [ref=e12]: CEO
+  - main [ref=e13]:
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - button "🚀 AllClosing360 Agencia IA ▼" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 🚀
+          - generic [ref=e19]:
+            - generic [ref=e20]: AllClosing360
+            - generic [ref=e21]: Agencia IA
+          - generic [ref=e22]: ▼
+        - generic [ref=e24]: Oficina Virtual
+      - generic [ref=e26]: 0 activas
+    - generic [ref=e29]:
+      - generic [ref=e33]: Cargando oficina 3D…
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: Timeline
+          - generic [ref=e37]:
+            - text: Acciones
+            - generic [ref=e38]: "1"
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e46]: ⚡ SISTEMA
+            - generic [ref=e47]: hace 0s
+          - generic [ref=e48]: ALLCLOSING360 OS v5 iniciado
+          - generic [ref=e49]: 15 directores IA · 35 skills · oficina 3D · voz · GitHub
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - generic [ref=e52]: "0"
+            - generic [ref=e53]: Completas
+          - generic [ref=e54]:
+            - generic [ref=e55]: "0"
+            - generic [ref=e56]: Pasos
+          - generic [ref=e57]:
+            - generic [ref=e58]: "0"
+            - generic [ref=e59]: Errores
+  - complementary [ref=e60]:
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - generic [ref=e63]: Command Chat
+        - generic [ref=e64]:
+          - button "⬇️" [ref=e65] [cursor=pointer]
+          - button "🗑️" [ref=e66] [cursor=pointer]
+      - generic [ref=e70]: Online
+    - generic [ref=e72]:
+      - generic [ref=e74]:
+        - text: ALLCLOSING360 OS v5.0 — Live AI Office
+        - generic [ref=e76]: 07:31
+      - generic [ref=e77]:
+        - generic [ref=e78]: 🤖
+        - generic [ref=e79]:
+          - generic [ref=e80]: Bienvenido, CEO. Tengo 15 directores IA activos (incluye Director de Producto con GitHub), 35 skills listas y voz de entrada/salida. Escribe o dicta una orden — el sistema asigna director y skill en tiempo real.
+          - generic [ref=e81]: 07:31
+    - generic [ref=e83]:
+      - generic [ref=e84]:
+        - textbox "Escribe u ordena al sistema…" [ref=e85]
+        - generic [ref=e86]:
+          - button "🎙" [ref=e87] [cursor=pointer]
+          - button "↑" [disabled] [ref=e88]
+      - generic [ref=e89]:
+        - button "Crear oferta irresistible" [ref=e90] [cursor=pointer]
+        - button "Campaña Meta Ads" [ref=e91] [cursor=pointer]
+        - button "Reporte ejecutivo" [ref=e92] [cursor=pointer]
+        - button "SOP operativo" [ref=e93] [cursor=pointer]
 ```
 
 # Test source
@@ -114,29 +160,34 @@ Call log:
   58 | 
   59 |   test("nav rail view switching works", async ({ page }) => {
   60 |     await page.goto("/");
-  61 |     // Wait for React full hydration
-  62 |     await page.waitForFunction(() => document.querySelectorAll("button").length > 3);
-  63 |     await page.waitForTimeout(1000);
-  64 |     // Try clicking on the ops view button — React handles this via onClick
-  65 |     await page.click("button[title='Operaciones']");
-  66 |     // Wait for React to update the view
-  67 |     await page.waitForTimeout(1000);
-  68 |     // Check that the main content area changed (header shows Operaciones)
-  69 |     const viewLabel = page.locator("text=Centro de Operaciones").first();
-> 70 |     await expect(viewLabel).toBeVisible({ timeout: 10_000 });
-     |                             ^ Error: expect(locator).toBeVisible() failed
-  71 |   });
-  72 | 
-  73 |   test("connectors panel loads", async ({ page }) => {
-  74 |     await page.goto("/");
-  75 |     // Wait for React full hydration
-  76 |     await page.waitForFunction(() => document.querySelectorAll("button").length > 3);
-  77 |     await page.waitForTimeout(1000);
-  78 |     await page.click("button[title='Conectores']");
-  79 |     await page.waitForTimeout(1000);
-  80 |     const hubTitle = page.locator("text=Hub de Conectores");
-  81 |     await expect(hubTitle).toBeVisible({ timeout: 10_000 });
-  82 |   });
-  83 | });
-  84 | 
+  61 |     await page.waitForLoadState("networkidle");
+  62 |     await page.waitForFunction(() => document.querySelectorAll("button").length > 3, { timeout: 10_000 });
+  63 |     // Force click via locator with force:true to bypass any overlay issues
+  64 |     const opsBtn = page.locator("button[title='Operaciones']");
+  65 |     await opsBtn.waitFor({ state: "visible", timeout: 8_000 });
+  66 |     await opsBtn.click({ force: true });
+  67 |     // The VIEW_LABEL rendered inside main panel header
+> 68 |     await page.waitForFunction(
+     |                ^ Error: page.waitForFunction: Test timeout of 30000ms exceeded.
+  69 |       () => document.body.innerText.includes("Operaciones"),
+  70 |       { timeout: 10_000 }
+  71 |     );
+  72 |     expect(await page.locator("body").innerText()).toContain("Operaciones");
+  73 |   });
+  74 | 
+  75 |   test("connectors panel loads", async ({ page }) => {
+  76 |     await page.goto("/");
+  77 |     await page.waitForLoadState("networkidle");
+  78 |     await page.waitForFunction(() => document.querySelectorAll("button").length > 3, { timeout: 10_000 });
+  79 |     const connBtn = page.locator("button[title='Conectores']");
+  80 |     await connBtn.waitFor({ state: "visible", timeout: 8_000 });
+  81 |     await connBtn.click({ force: true });
+  82 |     await page.waitForFunction(
+  83 |       () => document.body.innerText.includes("Conectores"),
+  84 |       { timeout: 10_000 }
+  85 |     );
+  86 |     expect(await page.locator("body").innerText()).toContain("Conectores");
+  87 |   });
+  88 | });
+  89 | 
 ```
