@@ -65,8 +65,8 @@ test.describe("ALLCLOSING360 — basic smoke tests", () => {
     await page.click("button[title='Operaciones']");
     // Wait for React to update the view
     await page.waitForTimeout(1000);
-    // Check that the main content area changed (Operaciones label in header)
-    const viewLabel = page.locator("text=Centro de Operaciones");
+    // Check that the main content area changed (header shows Operaciones)
+    const viewLabel = page.locator("text=Centro de Operaciones").first();
     await expect(viewLabel).toBeVisible({ timeout: 10_000 });
   });
 

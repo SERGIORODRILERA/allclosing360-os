@@ -22,7 +22,7 @@ export default defineConfig({
   webServer: {
     command: "cd apps/web && pnpm start",
     url: "http://localhost:3001",
-    reuseExistingServer: false,
+    reuseExistingServer: true,
     timeout: 60_000,
     env: {
       PORT: "3001",
