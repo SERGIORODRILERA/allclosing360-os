@@ -7,6 +7,231 @@ import {
 } from "../lib/connectors";
 import ConnectorLogo from "./ConnectorLogo";
 
+// ─── Priority connectors with env var config ──────────────────────────────────
+interface PriorityConnector {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  envVars: Array<{ key: string; label: string; placeholder: string; secret?: boolean }>;
+  description: string;
+}
+
+const PRIORITY_CONNECTORS: PriorityConnector[] = [
+  {
+    id: "ghl",
+    name: "GoHighLevel",
+    color: "#22c55e",
+    icon: "🏆",
+    description: "CRM central — contactos, pipelines y automatizaciones",
+    envVars: [
+      { key: "GHL_API_KEY", label: "API Key", placeholder: "eyJhbGc...", secret: true },
+      { key: "GHL_LOCATION_ID", label: "Location ID", placeholder: "abc123xyz" },
+    ],
+  },
+  {
+    id: "whatsapp",
+    name: "WhatsApp Business",
+    color: "#25D366",
+    icon: "💬",
+    description: "Mensajería directa a prospectos y clientes",
+    envVars: [
+      { key: "WHATSAPP_PHONE_NUMBER_ID", label: "Phone Number ID", placeholder: "123456789" },
+      { key: "WHATSAPP_ACCESS_TOKEN", label: "Access Token", placeholder: "EAABs...", secret: true },
+    ],
+  },
+  {
+    id: "meta_ads",
+    name: "Meta Ads",
+    color: "#1877F2",
+    icon: "📘",
+    description: "Campañas Facebook e Instagram desde el Director Meta Ads",
+    envVars: [
+      { key: "META_AD_ACCOUNT_ID", label: "Ad Account ID", placeholder: "act_123456" },
+      { key: "META_ACCESS_TOKEN", label: "Access Token", placeholder: "EAABs...", secret: true },
+    ],
+  },
+  {
+    id: "google_calendar",
+    name: "Google Calendar",
+    color: "#4285F4",
+    icon: "📅",
+    description: "Agenda reuniones y citas desde el chat",
+    envVars: [
+      { key: "GOOGLE_CLIENT_ID", label: "Client ID", placeholder: "123.apps.googleusercontent.com" },
+      { key: "GOOGLE_CLIENT_SECRET", label: "Client Secret", placeholder: "GOCSPX-...", secret: true },
+      { key: "GOOGLE_REFRESH_TOKEN", label: "Refresh Token", placeholder: "1//0eA...", secret: true },
+    ],
+  },
+];
+
+function PriorityConnectorCard({
+  connector,
+  status,
+  onConfigure,
+}: {
+  connector: PriorityConnector;
+  status: "configured" | "unconfigured";
+  onConfigure: () => void;
+}) {
+  const isConfigured = status === "configured";
+  return (
+    <div style={{
+      background: isConfigured ? `${connector.color}10` : "var(--color-surface-2)",
+      border: `1px solid ${isConfigured ? connector.color + "40" : "var(--color-border)"}`,
+      borderRadius: 12,
+      padding: "14px 16px",
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      transition: "all 0.2s",
+      boxShadow: isConfigured ? `0 0 20px ${connector.color}12` : "none",
+    }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: 10,
+        background: `${connector.color}20`,
+        border: `1px solid ${connector.color}40`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 18, flexShrink: 0,
+      }}>{connector.icon}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: isConfigured ? connector.color : "var(--color-text)" }}>{connector.name}</div>
+        <div style={{ fontSize: 10, color: "var(--color-text-dim)", marginTop: 1 }}>{connector.description}</div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+        <div style={{
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          color: isConfigured ? "#22d97a" : "var(--color-text-dim)",
+          background: isConfigured ? "rgba(34,217,122,0.1)" : "var(--color-surface-4)",
+          border: `1px solid ${isConfigured ? "rgba(34,217,122,0.25)" : "var(--color-border)"}`,
+          borderRadius: 4,
+          padding: "3px 8px",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+        }}>
+          {isConfigured ? (
+            <><div style={{ width: 4, height: 4, borderRadius: "50%", background: "#22d97a" }} /> CONECTADO</>
+          ) : "CONFIGURAR"}
+        </div>
+        <button
+          onClick={onConfigure}
+          style={{
+            fontSize: 10, fontWeight: 600,
+            padding: "5px 10px", borderRadius: 6,
+            background: isConfigured ? "transparent" : `${connector.color}20`,
+            border: `1px solid ${connector.color}40`,
+            color: connector.color,
+            cursor: "pointer",
+            transition: "all 0.15s",
+          }}
+        >
+          {isConfigured ? "Ver config" : "⚙️ Configurar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EnvVarModal({ connector, onClose }: { connector: PriorityConnector; onClose: () => void }) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [copied, setCopied] = useState<string | null>(null);
+
+  function copyEnvBlock() {
+    const block = connector.envVars.map((v) => `${v.key}=${values[v.key] ?? "tu_valor_aqui"}`).join("\n");
+    navigator.clipboard.writeText(block).then(() => {
+      setCopied("block");
+      setTimeout(() => setCopied(null), 2000);
+    });
+  }
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, background: "rgba(4,4,8,0.88)", backdropFilter: "blur(8px)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{
+        width: "100%", maxWidth: 480,
+        background: "var(--color-surface)",
+        border: `1px solid ${connector.color}30`,
+        borderRadius: 16,
+        overflow: "hidden",
+        boxShadow: `0 0 60px rgba(0,0,0,0.7), 0 0 30px ${connector.color}10`,
+      }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--color-border)", background: `${connector.color}08`, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ fontSize: 24 }}>{connector.icon}</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: connector.color }}>{connector.name}</div>
+            <div style={{ fontSize: 11, color: "var(--color-text-muted)", marginTop: 1 }}>Configuración de variables de entorno</div>
+          </div>
+          <button onClick={onClose} style={{ marginLeft: "auto", fontSize: 16, color: "var(--color-text-dim)", background: "none", border: "none" }}>✕</button>
+        </div>
+
+        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.6, background: "rgba(79,126,255,0.06)", border: "1px solid rgba(79,126,255,0.15)", borderRadius: 8, padding: "10px 14px" }}>
+            Configura estas variables en Vercel Dashboard → Settings → Environment Variables, o en tu archivo <code style={{ fontSize: 11, color: "#4f7eff" }}>.env.local</code> para desarrollo.
+          </div>
+
+          {connector.envVars.map((envVar) => (
+            <div key={envVar.key}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "var(--color-text-muted)", textTransform: "uppercase", marginBottom: 5 }}>
+                {envVar.label}
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <code style={{
+                  flex: 1,
+                  fontSize: 10,
+                  padding: "7px 10px",
+                  background: "var(--color-surface-3)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: 7,
+                  color: "#4f7eff",
+                  fontFamily: "monospace",
+                  display: "block",
+                }}>{envVar.key}</code>
+                <input
+                  type={envVar.secret ? "password" : "text"}
+                  placeholder={envVar.placeholder}
+                  value={values[envVar.key] ?? ""}
+                  onChange={(e) => setValues((prev) => ({ ...prev, [envVar.key]: e.target.value }))}
+                  style={{
+                    flex: 2,
+                    fontSize: 11,
+                    padding: "7px 10px",
+                    background: "var(--color-surface-3)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: 7,
+                    color: "var(--color-text)",
+                    fontFamily: "monospace",
+                    outline: "none",
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ padding: "14px 24px 20px", borderTop: "1px solid var(--color-border)", display: "flex", gap: 8 }}>
+          <button
+            onClick={copyEnvBlock}
+            style={{ flex: 1, padding: "9px 0", borderRadius: 8, background: `${connector.color}20`, border: `1px solid ${connector.color}40`, color: connector.color, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+          >
+            {copied === "block" ? "✅ Copiado" : "📋 Copiar .env block"}
+          </button>
+          <button
+            onClick={onClose}
+            style={{ flex: 1, padding: "9px 0", borderRadius: 8, background: "var(--color-accent)", border: "none", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+          >
+            Configurar en Vercel →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_CFG: Record<ConnectorStatus, { label: string; color: string; dot: string }> = {
   disconnected: { label: "Sin conectar",    color: "#4a4a6a", dot: "#4a4a6a" },
@@ -35,10 +260,20 @@ export default function ConnectorsPanel() {
   const [detail, setDetail] = useState<ConnectorDef | null>(null);
   const [oauthModal, setOauthModal] = useState<ConnectorDef | null>(null);
   const [testMsg, setTestMsg] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
+  const [envModal, setEnvModal] = useState<PriorityConnector | null>(null);
+  // Priority connector statuses — for now driven by demo/disconnected states
+  const [priorityStatus, setPriorityStatus] = useState<Record<string, "configured" | "unconfigured">>({});
 
   // Load persisted states
   useEffect(() => {
-    setStates(loadConnectorStates());
+    const loaded = loadConnectorStates();
+    setStates(loaded);
+    // Derive priority statuses from connector states
+    const ps: Record<string, "configured" | "unconfigured"> = {};
+    for (const pc of PRIORITY_CONNECTORS) {
+      ps[pc.id] = (loaded[pc.id] === "active" || loaded[pc.id] === "demo") ? "configured" : "unconfigured";
+    }
+    setPriorityStatus(ps);
   }, []);
 
   function getStatus(id: string): ConnectorStatus {
@@ -105,6 +340,23 @@ export default function ConnectorsPanel() {
                 <div style={{ fontSize: 18, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
                 <div style={{ fontSize: 9, color: "var(--color-text-dim)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Priority connectors */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: "var(--color-text-dim)", textTransform: "uppercase", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ color: "#fbbf24" }}>⭐</span> Conectores Prioritarios
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+            {PRIORITY_CONNECTORS.map((pc) => (
+              <PriorityConnectorCard
+                key={pc.id}
+                connector={pc}
+                status={priorityStatus[pc.id] ?? "unconfigured"}
+                onConfigure={() => setEnvModal(pc)}
+              />
             ))}
           </div>
         </div>
