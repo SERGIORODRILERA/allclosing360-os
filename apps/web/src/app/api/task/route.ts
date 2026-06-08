@@ -251,11 +251,19 @@ type SkillShape    = { name: string; description: string };
 function buildSystem(director: DirectorShape | undefined, skill: SkillShape | undefined, company: string, toolHint: string): string {
   const toolInstructions: Record<string, string> = {
     create_html_file:
-      "USA la herramienta create_html_file AHORA MISMO. El HTML debe ser completo y funcional pero conciso (max 200 lineas). Incluye: hero section, 3 beneficios, CTA, footer. CSS embebido moderno. Contenido real adaptado al negocio. CERO placeholders.",
+      "IMPORTANTE: La landing debe ser completa y vendible. Incluye: hero impactante con headline y subheadline, propuesta de valor unica, 3-5 beneficios con iconos emoji, testimonio(s) de ejemplo, seccion de garantia, precio/oferta (si aplica), CTA prominente, footer. Todo en espanol. " +
+      "USA la herramienta create_html_file AHORA MISMO. El HTML debe ser completo y funcional (max 300 lineas). CSS embebido moderno y profesional. Contenido real adaptado al negocio. CERO placeholders.",
     create_code_file:
       "USA la herramienta create_code_file. El codigo debe ser funcional y completo. Sin stubs ni TODOs.",
     create_document:
-      "USA la herramienta create_document. El documento debe ser completo, profesional y totalmente accionable. Sin [INSERTAR AQUI]. Incluye numeros, ejemplos reales y proximas acciones.",
+      "USA la herramienta create_document AHORA. El documento debe contener:\n" +
+      "1. ENCABEZADO con titulo, fecha, empresa cliente y director responsable\n" +
+      "2. RESUMEN EJECUTIVO (3-5 puntos clave, concretos)\n" +
+      "3. CUERPO PRINCIPAL con secciones numeradas, datos especificos, ejemplos reales\n" +
+      "4. TABLAS cuando aplique (KPIs, presupuestos, timelines)\n" +
+      "5. PROXIMOS PASOS: lista de 3-5 acciones especificas con responsable y fecha sugerida\n" +
+      "PROHIBIDO: placeholders, [INSERTAR AQUI], 'a determinar', respuestas vagas.\n" +
+      "OBLIGATORIO: incluir numeros, porcentajes, precios aproximados, tiempos especificos.",
     github:
       "Eres el Director de Producto con acceso completo a GitHub. Usa github_read_repo para explorar el repositorio y entender el codigo, luego usa github_create_pr para proponer cambios concretos. Siempre lee primero antes de crear el PR.",
   };
