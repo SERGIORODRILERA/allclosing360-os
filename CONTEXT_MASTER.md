@@ -94,22 +94,22 @@ Construir ALLCLOSING360 como sistema operativo comercial/marketing IA en españo
 - **Connectors:** Catálogo visual completo, sin OAuth real ni sincronización
 
 ### 🔴 ROTO / NO IMPLEMENTADO
-- **3D Office:** No carga en Vercel (peer dep conflict R3F v9 + React 18)
+- **Three.js office:** Reemplazado por CSS puro (ver OfficeScene3D.tsx)
 - **TTS (voz de salida):** No existe ninguna implementación
 - **Autenticación:** No hay login, no hay modelo de usuario en web
 - **PostgreSQL conectado:** Schema diseñado en `packages/database`, nunca wired al web app
 - **NATS conectado:** Mismo caso que PostgreSQL
 - **Conectores reales:** Ningún OAuth, ninguna sync real
 - **Multi-tenancy:** Schema diseñado, no implementado
-- **Tests:** No hay tests de ningún tipo
+- **Tests:** Playwright suite básica escrita y pasando 8/8 en tests/e2e/basic.spec.ts
 - **Observabilidad:** Sin logs, métricas ni trazas
 
-### 🆕 AÑADIDO RECIENTEMENTE (últimos commits)
-- v5.0: Three.js R3F 3D office Sims-style (SimsOffice3D.tsx) — roto en prod
-- AUDIT.md completo (auditoría técnica 2026-06-07)
-- Correcciones Vercel: vercel.json movido a apps/web, outputDirectory fixes
-- ActionTimeline, avatares Sims, ConnectorsPanel completo
-- Playwright instalado en workspace root (hoy 2026-06-08)
+### 🆕 AÑADIDO RECIENTEMENTE (últimos commits — sesión CTO 2026-06-08)
+- **OfficeScene3D.tsx REESCRITO** — CSS isométrico puro, 9 salas, 15 avatares, info panel, animaciones idle
+- **OpsPanel.tsx mejorado** — KPIs en tiempo real: mensajes enviados, sesión timer, director top, velocidad de respuesta, tokens/costo
+- **lib/connectors-real.ts** — Interfaces TypeScript + implementaciones stub para GHL, WhatsApp, Meta Ads, Google Calendar
+- **ConnectorsPanel.tsx** — Sección de conectores prioritarios con estado CONFIGURAR/CONECTADO + modal de env vars
+- **Playwright suite 8/8** — tests/e2e/basic.spec.ts, playwright.config.ts configurado
 
 ---
 
