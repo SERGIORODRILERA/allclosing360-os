@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Component, type ReactNode } from "react";
 import type { EngineId } from "@ac360/types";
 import type { Message } from "./MessageFeed";
 import type { UITask, TaskArtifact } from "./TasksPanel";
@@ -28,6 +28,30 @@ import {
   exportSession,
   type StoredOrder,
 } from "../lib/memory";
+
+// ─── Office error boundary ─────────────────────────────────────────────────
+class OfficeErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  override render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          width: "100%", height: "100%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "#030308", flexDirection: "column", gap: 10,
+        }}>
+          <div style={{ fontSize: 24, opacity: 0.3 }}>🏢</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>Oficina 3D no disponible en este dispositivo</div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ─── type helpers ──────────────────────────────────────────────────────────
 function msgToStored(m: Message) { return { ...m, timestamp: m.timestamp.toISOString() }; }
@@ -439,12 +463,14 @@ export default function CommandCenter() {
           {activeView === "office" && (
             <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
               <div style={{ flex: 1, overflow: "hidden" }}>
-                <SimsOfficeView
-                  tasks={tasks}
-                  activeDirectorId={activeDirectorId}
-                  onDirectorSelect={setActiveDirectorId}
-                  onViewResult={(task) => setSelectedTask(task)}
-                />
+                <OfficeErrorBoundary>
+                  <SimsOfficeView
+                    tasks={tasks}
+                    activeDirectorId={activeDirectorId}
+                    onDirectorSelect={setActiveDirectorId}
+                    onViewResult={(task) => setSelectedTask(task)}
+                  />
+                </OfficeErrorBoundary>
               </div>
               <ActionTimeline events={timelineEvents} />
             </div>

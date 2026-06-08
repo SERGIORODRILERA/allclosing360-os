@@ -10,3 +10,4 @@ public/generated/*.md
 public/generated/*.js
 public/generated/*.ts
 .pnpm-store/
+.vercel
