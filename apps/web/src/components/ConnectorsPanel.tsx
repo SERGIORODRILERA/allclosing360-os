@@ -428,6 +428,14 @@ export default function ConnectorsPanel() {
           onClose={() => setOauthModal(null)}
         />
       )}
+
+      {/* ── Env var config modal ──────────────────────────────────────────────── */}
+      {envModal && (
+        <EnvVarModal
+          connector={envModal}
+          onClose={() => setEnvModal(null)}
+        />
+      )}
     </div>
   );
 }
