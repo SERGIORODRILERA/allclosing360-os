@@ -1,5 +1,5 @@
 # ALLCLOSING360 — CONTEXT MASTER
-> Última actualización: 2026-06-08 | Generado por análisis completo de sesión
+> Última actualización: 2026-06-08 v2 | CTO session — CSS office, KPIs, connectors, Playwright
 
 ---
 
@@ -16,7 +16,7 @@ Construir ALLCLOSING360 como sistema operativo comercial/marketing IA en españo
 | Runtime | Node.js 22+ | ✅ |
 | Monorepo | pnpm + Turborepo | ✅ |
 | IA | @anthropic-ai/sdk 0.102 (Haiku + Sonnet 4.6) | ✅ Real, SSE streaming |
-| 3D | Three.js + React Three Fiber 8 / Drei 9 | 🔴 Roto en producción |
+| Office | CSS/SVG isométrico puro (OfficeScene3D.tsx reescrito) | ✅ Funciona en producción |
 | State | Zustand 5 | ⚠️ Instalado, poco utilizado |
 | ORM | Drizzle ORM + PostgreSQL | ⚠️ Instalado, no conectado al web |
 | Eventos | NATS | ⚠️ Instalado, no conectado al web |
@@ -87,7 +87,7 @@ Construir ALLCLOSING360 como sistema operativo comercial/marketing IA en españo
 - Catálogo visual de 23 integraciones
 
 ### ⚠️ A MEDIAS / INCOMPLETO
-- **SimsOffice3D:** Código completo (976 líneas), no carga en producción por incompatibilidad React 18 / R3F v9
+- **OfficeScene3D:** Reescrito en CSS puro (sin Three.js), carga en producción, 9 salas + avatares + info panel
 - **GitHub tool:** Código listo en `/api/task`, falta configurar `GITHUB_TOKEN` + `GITHUB_REPO` en Vercel
 - **STT (dictado):** Funciona pero `continuous=false` → se corta a los 10-15 seg
 - **Zustand store:** Instalado pero CommandCenter usa `useState` local mayormente
