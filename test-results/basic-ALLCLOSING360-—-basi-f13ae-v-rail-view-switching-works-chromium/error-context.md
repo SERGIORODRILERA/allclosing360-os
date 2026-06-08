@@ -14,14 +14,14 @@
 ```
 Error: expect(locator).toBeVisible() failed
 
-Locator: locator('text=Estado del Sistema')
+Locator: locator('text=Centro de Operaciones')
 Expected: visible
-Timeout: 5000ms
+Timeout: 10000ms
 Error: element(s) not found
 
 Call log:
-  - Expect "toBeVisible" with timeout 5000ms
-  - waiting for locator('text=Estado del Sistema')
+  - Expect "toBeVisible" with timeout 10000ms
+  - waiting for locator('text=Centro de Operaciones')
 
 ```
 
@@ -114,28 +114,28 @@ Call log:
   58 | 
   59 |   test("nav rail view switching works", async ({ page }) => {
   60 |     await page.goto("/");
-  61 |     await page.waitForLoadState("networkidle");
-  62 |     // Try clicking on the ops view button (title=Operaciones)
-  63 |     const opsBtn = page.locator("[title='Operaciones']").first();
-  64 |     if (await opsBtn.isVisible()) {
-  65 |       await opsBtn.click();
-  66 |       // Ops panel header
-  67 |       const opsHeader = page.locator("text=Estado del Sistema");
-> 68 |       await expect(opsHeader).toBeVisible({ timeout: 5_000 });
-     |                               ^ Error: expect(locator).toBeVisible() failed
-  69 |     }
-  70 |   });
-  71 | 
-  72 |   test("connectors panel loads", async ({ page }) => {
-  73 |     await page.goto("/");
-  74 |     await page.waitForLoadState("networkidle");
-  75 |     // Click connectors nav
-  76 |     const connectorsBtn = page.locator("[title='Conectores']").first();
-  77 |     if (await connectorsBtn.isVisible()) {
-  78 |       await connectorsBtn.click();
-  79 |       const hubTitle = page.locator("text=Hub de Conectores");
-  80 |       await expect(hubTitle).toBeVisible({ timeout: 5_000 });
-  81 |     }
+  61 |     // Wait for React full hydration
+  62 |     await page.waitForFunction(() => document.querySelectorAll("button").length > 3);
+  63 |     await page.waitForTimeout(1000);
+  64 |     // Try clicking on the ops view button — React handles this via onClick
+  65 |     await page.click("button[title='Operaciones']");
+  66 |     // Wait for React to update the view
+  67 |     await page.waitForTimeout(1000);
+  68 |     // Check that the main content area changed (Operaciones label in header)
+  69 |     const viewLabel = page.locator("text=Centro de Operaciones");
+> 70 |     await expect(viewLabel).toBeVisible({ timeout: 10_000 });
+     |                             ^ Error: expect(locator).toBeVisible() failed
+  71 |   });
+  72 | 
+  73 |   test("connectors panel loads", async ({ page }) => {
+  74 |     await page.goto("/");
+  75 |     // Wait for React full hydration
+  76 |     await page.waitForFunction(() => document.querySelectorAll("button").length > 3);
+  77 |     await page.waitForTimeout(1000);
+  78 |     await page.click("button[title='Conectores']");
+  79 |     await page.waitForTimeout(1000);
+  80 |     const hubTitle = page.locator("text=Hub de Conectores");
+  81 |     await expect(hubTitle).toBeVisible({ timeout: 10_000 });
   82 |   });
   83 | });
   84 | 

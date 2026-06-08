@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: "list",
   timeout: 30_000,
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3001",
     trace: "on-first-retry",
     headless: true,
   },
@@ -20,9 +20,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "cd apps/web && pnpm dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env["CI"],
+    command: "cd apps/web && pnpm start",
+    url: "http://localhost:3001",
+    reuseExistingServer: false,
     timeout: 60_000,
+    env: {
+      PORT: "3001",
+    },
   },
 });

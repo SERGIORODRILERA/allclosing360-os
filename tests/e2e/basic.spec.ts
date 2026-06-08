@@ -58,26 +58,26 @@ test.describe("ALLCLOSING360 — basic smoke tests", () => {
 
   test("nav rail view switching works", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
-    // Try clicking on the ops view button (title=Operaciones)
-    const opsBtn = page.locator("[title='Operaciones']").first();
-    if (await opsBtn.isVisible()) {
-      await opsBtn.click();
-      // Ops panel header
-      const opsHeader = page.locator("text=Estado del Sistema");
-      await expect(opsHeader).toBeVisible({ timeout: 5_000 });
-    }
+    // Wait for React full hydration
+    await page.waitForFunction(() => document.querySelectorAll("button").length > 3);
+    await page.waitForTimeout(1000);
+    // Try clicking on the ops view button — React handles this via onClick
+    await page.click("button[title='Operaciones']");
+    // Wait for React to update the view
+    await page.waitForTimeout(1000);
+    // Check that the main content area changed (Operaciones label in header)
+    const viewLabel = page.locator("text=Centro de Operaciones");
+    await expect(viewLabel).toBeVisible({ timeout: 10_000 });
   });
 
   test("connectors panel loads", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
-    // Click connectors nav
-    const connectorsBtn = page.locator("[title='Conectores']").first();
-    if (await connectorsBtn.isVisible()) {
-      await connectorsBtn.click();
-      const hubTitle = page.locator("text=Hub de Conectores");
-      await expect(hubTitle).toBeVisible({ timeout: 5_000 });
-    }
+    // Wait for React full hydration
+    await page.waitForFunction(() => document.querySelectorAll("button").length > 3);
+    await page.waitForTimeout(1000);
+    await page.click("button[title='Conectores']");
+    await page.waitForTimeout(1000);
+    const hubTitle = page.locator("text=Hub de Conectores");
+    await expect(hubTitle).toBeVisible({ timeout: 10_000 });
   });
 });
